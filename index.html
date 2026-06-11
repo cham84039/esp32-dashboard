@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>ESP32 IoT Dashboard</title>
+
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    background:#f3f5f7;
+    font-family:
+    "Segoe UI",
+    sans-serif;
+
+    display:flex;
+    justify-content:center;
+}
+
+.container{
+    width:100%;
+    max-width:500px;
+    padding:20px;
+}
+
+.header{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+.header h1{
+    color:#333;
+}
+
+.card{
+    background:white;
+
+    border-radius:18px;
+
+    padding:20px;
+
+    margin-bottom:15px;
+
+    box-shadow:
+    0 4px 15px
+    rgba(0,0,0,0.08);
+}
+
+.title{
+    font-size:18px;
+    font-weight:bold;
+    margin-bottom:10px;
+    color:#444;
+}
+
+.value{
+    font-size:36px;
+    font-weight:bold;
+    text-align:center;
+    color:#222;
+}
+
+.status{
+    text-align:center;
+    font-size:22px;
+    font-weight:bold;
+    margin:10px 0;
+}
+
+.on{
+    color:#28a745;
+}
+
+.off{
+    color:#dc3545;
+}
+
+.auto{
+    color:#007bff;
+}
+
+.manual{
+    color:#ff9800;
+}
+
+.btn-group{
+    display:flex;
+    gap:10px;
+    margin-top:15px;
+}
+
+button{
+    flex:1;
+
+    border:none;
+
+    border-radius:12px;
+
+    padding:12px;
+
+    font-size:16px;
+
+    cursor:pointer;
+
+    transition:0.2s;
+}
+
+button:hover{
+    transform:scale(1.03);
+}
+
+.btn-on{
+    background:#28a745;
+    color:white;
+}
+
+.btn-off{
+    background:#dc3545;
+    color:white;
+}
+
+.btn-auto{
+    background:#007bff;
+    color:white;
+}
+
+.btn-manual{
+    background:#ff9800;
+    color:white;
+}
+
+.footer{
+    text-align:center;
+    color:#888;
+    margin-top:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+<h1>ESP32 IoT Dashboard</h1>
+</div>
+
+<!-- 温湿度 -->
+
+<div class="card">
+
+<div class="title">
+🌡 温度
+</div>
+
+<div
+class="value"
+id="temp">
+--
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="title">
+💧 湿度
+</div>
+
+<div
+class="value"
+id="humi">
+--
+</div>
+
+</div>
+
+<!-- LED -->
+
+<div class="card">
+
+<div class="title">
+💡 LED状态
+</div>
+
+<div
+class="status off"
+id="ledStatus">
+
+OFF
+
+</div>
+
+<div class="btn-group">
+
+<button
+class="btn-on"
+onclick="setLED(1)">
+开启
+</button>
+
+<button
+class="btn-off"
+onclick="setLED(0)">
+关闭
+</button>
+
+</div>
+
+</div>
+
+<!-- Mode -->
+
+<div class="card">
+
+<div class="title">
+⚙ 工作模式
+</div>
+
+<div
+class="status auto"
+id="modeStatus">
+
+AUTO
+
+</div>
+
+<div class="btn-group">
+
+<button
+class="btn-auto"
+onclick="setMode('auto')">
+
+AUTO
+
+</button>
+
+<button
+class="btn-manual"
+onclick="setMode('manual')">
+
+MANUAL
+
+</button>
+
+</div>
+
+</div>
+
+<div class="footer">
+MQTT Connected
+</div>
+
+</div>
+
+<script>
+
+let currentMode = "auto";
+
+const client = mqtt.connect(
+"wss://fb42a539a03444059515622c88cee515.s1.eu.hivemq.cloud:8884/mqtt",
+{
+    username:"esp32",
+    password:"Crz123456",
+
+    clean:true,
+
+    connectTimeout:4000
+}
+);
+
+client.on(
+"connect",
+function()
+{
+    console.log(
+        "MQTT Connected"
+    );
+
+    client.subscribe(
+        "esp32/temp"
+    );
+
+    client.subscribe(
+        "esp32/humi"
+    );
+
+    client.subscribe(
+        "esp32/status"
+    );
+}
+);
+
+client.on(
+"message",
+function(topic,message)
+{
+    const msg =
+    message.toString();
+
+    if(topic==="esp32/temp")
+    {
+        document
+        .getElementById("temp")
+        .innerHTML =
+        msg+" °C";
+    }
+
+    if(topic==="esp32/humi")
+    {
+        document
+        .getElementById("humi")
+        .innerHTML =
+        msg+" %";
+    }
+
+    if(topic==="esp32/status")
+    {
+        const led =
+        document
+        .getElementById(
+            "ledStatus"
+        );
+
+        led.innerHTML =
+        msg;
+
+        if(msg==="ON")
+        {
+            led.className =
+            "status on";
+        }
+        else
+        {
+            led.className =
+            "status off";
+        }
+    }
+}
+);
+
+function setLED(val)
+{
+    client.publish(
+        "esp32/led/set",
+        val.toString()
+    );
+}
+
+function setMode(mode)
+{
+    currentMode =
+    mode;
+
+    client.publish(
+        "esp32/mode/set",
+        mode
+    );
+
+    const m =
+    document
+    .getElementById(
+        "modeStatus"
+    );
+
+    m.innerHTML =
+    mode.toUpperCase();
+
+    if(mode==="auto")
+    {
+        m.className =
+        "status auto";
+    }
+    else
+    {
+        m.className =
+        "status manual";
+    }
+}
+
+</script>
+
+</body>
+</html>
