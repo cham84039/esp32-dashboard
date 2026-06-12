@@ -389,33 +389,10 @@ function setLED(val)
 
 function setMode(mode)
 {
-    currentMode =
-    mode;
-
     client.publish(
         "esp32/mode/set",
         mode
     );
-
-    const m =
-    document
-    .getElementById(
-        "modeStatus"
-    );
-
-    m.innerHTML =
-    mode.toUpperCase();
-
-    if(mode==="auto")
-    {
-        m.className =
-        "status auto";
-    }
-    else
-    {
-        m.className =
-        "status manual";
-    }
 }
 
 </script>
