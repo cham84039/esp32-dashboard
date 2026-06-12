@@ -301,6 +301,10 @@ function()
     client.subscribe(
         "esp32/status"
     );
+
+    client.subscribe(
+        "esp32/mode"
+    );
 }
 );
 
@@ -347,6 +351,29 @@ function(topic,message)
         {
             led.className =
             "status off";
+        }
+    }
+
+    if(topic==="esp32/mode")
+    {
+        const mode =
+        document
+        .getElementById(
+            "modeStatus"
+        );
+
+        mode.innerHTML =
+        msg;
+
+        if(msg==="AUTO")
+        {
+            mode.className =
+            "status auto";
+        }
+        else
+        {
+            mode.className =
+            "status manual";
         }
     }
 }
