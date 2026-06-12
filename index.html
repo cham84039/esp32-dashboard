@@ -260,6 +260,77 @@ MANUAL
 
 </div>
 
+<!-- ESP32 Status -->
+
+<div class="card">
+
+<div class="title">
+📡 ESP32状态
+</div>
+
+<div
+class="status on"
+id="deviceStatus">
+
+ONLINE
+
+</div>
+
+<div
+style="
+text-align:center;
+font-size:16px;
+margin-top:10px;
+"
+id="ipStatus">
+
+IP: --
+
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="title">
+🔥 自动触发温度
+</div>
+
+<div
+class="value"
+id="threshold">
+
+20°C
+
+</div>
+
+<input
+type="number"
+id="thresholdInput"
+placeholder="输入温度"
+style="
+width:100%;
+padding:12px;
+margin-top:15px;
+border-radius:12px;
+border:1px solid #ddd;
+font-size:16px;
+">
+
+<div class="btn-group">
+
+<button
+class="btn-auto"
+onclick="setThreshold()">
+
+更新阈值
+
+</button>
+
+</div>
+
+</div>
+
 <div class="footer">
 MQTT Connected
 </div>
@@ -269,6 +340,9 @@ MQTT Connected
 <script>
 
 let currentMode = "auto";
+
+let lastMessageTime =
+Date.now();
 
 const client = mqtt.connect(
 "wss://fb42a539a03444059515622c88cee515.s1.eu.hivemq.cloud:8884/mqtt",
@@ -305,6 +379,18 @@ function()
     client.subscribe(
         "esp32/mode"
     );
+
+    client.subscribe(
+        "esp32/threshold"
+    );
+
+    client.subscribe(
+        "esp32/ip"
+    );
+
+    client.subscribe(
+        "esp32/threshold"
+    );
 }
 );
 
@@ -312,6 +398,9 @@ client.on(
 "message",
 function(topic,message)
 {
+    lastMessageTime =
+    Date.now();
+
     const msg =
     message.toString();
 
@@ -376,8 +465,30 @@ function(topic,message)
             "status manual";
         }
     }
+
+    if(topic==="esp32/ip")
+    {
+        document
+        .getElementById(
+            "ipStatus"
+        )
+        .innerHTML =
+        "IP: " + msg;
+    }
+
+    if(topic==="esp32/threshold")
+    {
+        document
+        .getElementById(
+        "threshold"
+        )
+        .innerHTML =
+        msg+" °C";
+    }
+
 }
 );
+
 
 function setLED(val)
 {
@@ -394,6 +505,58 @@ function setMode(mode)
         mode
     );
 }
+
+function setThreshold()
+{
+    const value =
+    document
+    .getElementById(
+    "thresholdInput"
+    )
+    .value;
+
+    client.publish(
+    "esp32/threshold/set",
+    value
+    );
+}
+
+setInterval(
+function()
+{
+    const status =
+    document
+    .getElementById(
+        "deviceStatus"
+    );
+
+    if(
+        Date.now()
+        -
+        lastMessageTime
+        <
+        5000
+    )
+    {
+        status.innerHTML =
+        "🟢 ONLINE";
+
+        status.className =
+        "status on";
+    }
+    else
+    {
+        status.innerHTML =
+        "🔴 OFFLINE";
+
+        status.className =
+        "status off";
+    }
+
+},
+1000
+);
+
 
 </script>
 
